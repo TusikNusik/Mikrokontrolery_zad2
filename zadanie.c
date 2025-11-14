@@ -1,11 +1,7 @@
 #include <delay.h>
 #include <gpio.h>
 #include <stm32.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdbool.h>
-#include <errno.h>
-#include <string.h>
 
 // ------------------ PRZYCISKI ------------------
 // ------------------ AKTYWNY 0 ------------------
@@ -28,38 +24,6 @@
 
 #define AT_BTN_GPIO GPIOA
 #define AT_BTN_PIN 0
-
-// ------------------ DIODY ------------------
-
-#define RED_LED_GPIO GPIOA
-#define GREEN_LED_GPIO GPIOA
-#define BLUE_LED_GPIO GPIOB
-#define GREEN2_LED_GPIO GPIOA
-#define RED_LED_PIN 6
-#define GREEN_LED_PIN 7
-#define BLUE_LED_PIN 0
-#define GREEN2_LED_PIN 5
-
-#define RedLEDon() \
-    RED_LED_GPIO->BSRR = 1 << (RED_LED_PIN + 16)
-#define RedLEDoff() \
-    RED_LED_GPIO->BSRR = 1 << RED_LED_PIN
-
-#define GreenLEDon() \
-    GREEN_LED_GPIO->BSRR = 1 << (GREEN_LED_PIN + 16)
-#define GreenLEDoff() \
-    GREEN_LED_GPIO->BSRR = 1 << GREEN_LED_PIN
-
-#define BlueLEDon() \
-    BLUE_LED_GPIO->BSRR = 1 << (BLUE_LED_PIN + 16)
-#define BlueLEDoff() \
-    BLUE_LED_GPIO->BSRR = 1 << BLUE_LED_PIN
-
-#define Green2LEDon() \
-    GREEN2_LED_GPIO->BSRR = 1 << GREEN2_LED_PIN
-#define Green2LEDoff() \
-    GREEN2_LED_GPIO->BSRR = 1 << (GREEN2_LED_PIN + 16)
-
 
 // ------------------ USART ------------------
 
@@ -87,6 +51,9 @@ struct cyclic_buffer {
 };
 
 typedef struct cyclic_buffer cyclic_buffer;
+
+
+cyclic_buffer c;
 
 void init(cyclic_buffer* c) {
     static char storage[BUFFOR_SIZE];  
@@ -134,7 +101,6 @@ char* get_tail(cyclic_buffer* c) {
 }
 
 unsigned get_first_message_length(cyclic_buffer* c) {
-    //return 15;
     char* find_end = c->tail;
     unsigned length = 1;
     while(*find_end != '\n') {
@@ -150,139 +116,156 @@ void pop_front_x_bytes(cyclic_buffer* c, unsigned pop_n) {
     }
 }
 
-bool left_pressed(cyclic_buffer* c, bool was_pressed) {
+void left_pressed(cyclic_buffer* c) {
     if((LEFT_BTN_GPIO->IDR >> LEFT_BTN_PIN) & 1) {
-        if(was_pressed) {
-            push_back(c, "LEFT RELEASED\r\n");
-        }
-        return false;
+        push_back(c, "LEFT RELEASED\r\n");
     }
-    if(!was_pressed) {
+    else {
         push_back(c, "LEFT PRESSED\r\n");
     }
-    return true;
 }
 
-bool right_pressed(cyclic_buffer* c, bool was_pressed) {
+void right_pressed(cyclic_buffer* c) {
     if((RIGHT_BTN_GPIO->IDR >> RIGHT_BTN_PIN) & 1) {
-        if(was_pressed) {
-            push_back(c, "RIGHT RELEASED\r\n");
-        }
-        return false;
+        push_back(c, "RIGHT RELEASED\r\n");
     }
-    if(!was_pressed) {
+    else {
         push_back(c, "RIGHT PRESSED\r\n");
     }
-    return true;
 }
 
-bool up_pressed(cyclic_buffer* c, bool was_pressed) {
+void up_pressed(cyclic_buffer* c) {
     if((UP_BTN_GPIO->IDR >> UP_BTN_PIN) & 1) {
-        if(was_pressed) {
-            push_back(c, "UP RELEASED\r\n");
-        }
-        return false;
+        push_back(c, "UP RELEASED\r\n");
     }
-    if(!was_pressed) {
+    else {
         push_back(c, "UP PRESSED\r\n");
     }
-    return true;
 }
 
-bool down_pressed(cyclic_buffer* c, bool was_pressed) {
+void down_pressed(cyclic_buffer* c) {
     if((DOWN_BTN_GPIO->IDR >> DOWN_BTN_PIN) & 1) {
-        if(was_pressed) {
-            push_back(c, "DOWN RELEASED\r\n");
-        }
-        return false;
+        push_back(c, "DOWN RELEASED\r\n");
     }
-    if(!was_pressed) {
+    else {
         push_back(c, "DOWN PRESSED\r\n");
     }
-    return true;
+  
 }
 
-bool action_pressed(cyclic_buffer* c, bool was_pressed) {
+void action_pressed(cyclic_buffer* c) {
     if((ACTION_BTN_GPIO->IDR >> ACTION_BTN_PIN) & 1) {
-        if(was_pressed) {
-            push_back(c, "FIRE RELEASED\r\n");
-        }
-        return false;
+        push_back(c, "FIRE RELEASED\r\n");
     }
-    if(!was_pressed) {
+    else {
         push_back(c, "FIRE PRESSEDD\r\n");
     }
-    return true;
 }
 
-bool user_pressed(cyclic_buffer* c, bool was_pressed) {
+void user_pressed(cyclic_buffer* c) {
     if((USER_BTN_GPIO->IDR >> USER_BTN_PIN) & 1) {
-        if(was_pressed) {
-            push_back(c, "USER RELEASED\r\n");
-        }
-        return false;
+        push_back(c, "USER RELEASED\r\n");
     }
-    if(!was_pressed) {
+    else {
         push_back(c, "USER PRESSED\r\n");
     }
-    return true;
 }
 
-bool mode_pressed(cyclic_buffer* c, bool was_pressed) {
+void mode_pressed(cyclic_buffer* c) {
     if(!((AT_BTN_GPIO->IDR >> AT_BTN_PIN) & 1)) {
-        if(was_pressed) {
-            push_back(c, "MODE RELEASED\r\n");
-        }
-        return false;
+        push_back(c, "MODE RELEASED\r\n");
     }
-    if(!was_pressed) {
+    else {
         push_back(c, "MODE PRESSED\r\n");
     }
-    return true;
-}
-
-
-void check_buttons(cyclic_buffer* c, bool* b_pressed) {
-    if(left_pressed(c, b_pressed[LEFT_BTN_PIN])) { b_pressed[LEFT_BTN_PIN] = true; } else { b_pressed[LEFT_BTN_PIN] = false; }
-    if(right_pressed(c, b_pressed[RIGHT_BTN_PIN])) { b_pressed[RIGHT_BTN_PIN] = true; } else { b_pressed[RIGHT_BTN_PIN] = false; }
-    if(up_pressed(c, b_pressed[UP_BTN_PIN])) { b_pressed[UP_BTN_PIN] = true; } else { b_pressed[UP_BTN_PIN] = false; }
-    if(down_pressed(c, b_pressed[DOWN_BTN_PIN])) { b_pressed[DOWN_BTN_PIN] = true; } else { b_pressed[DOWN_BTN_PIN] = false; }
-    if(mode_pressed(c, b_pressed[AT_BTN_PIN])) { b_pressed[AT_BTN_PIN] = true; } else { b_pressed[AT_BTN_PIN] = false; }
-    if(user_pressed(c, b_pressed[USER_BTN_PIN])) { b_pressed[USER_BTN_PIN] = true; } else { b_pressed[USER_BTN_PIN] = false; }
-    if(action_pressed(c, b_pressed[ACTION_BTN_PIN])) { b_pressed[ACTION_BTN_PIN] = true; } else { b_pressed[ACTION_BTN_PIN] = false; }
 }
 
 void send_message(cyclic_buffer* c) {
-    if((DMA1_Stream6->CR & DMA_SxCR_EN) == 0 && (DMA1->HISR & DMA_HISR_TCIF6) == 0) {
-        DMA1_Stream6->M0AR = (uint32_t)get_tail(c);
-        DMA1_Stream6->NDTR = get_first_message_length(c);
-        DMA1_Stream6->CR |= DMA_SxCR_EN;
-    }
+    DMA1_Stream6->M0AR = (uint32_t)get_tail(c);
+    DMA1_Stream6->NDTR = get_first_message_length(c);
+    DMA1_Stream6->CR |= DMA_SxCR_EN;
     
 }
 
 // Funkcja ta wywołuje się asynchronicznie w stosunku do mojego programu, nie mogą jej wywoływać.
 // Funkcja ta wywoluje sie gdy nastepuje przerwanie.
-void DMA1_Stream6_IRQHandler(cyclic_buffer* c, bool* transmission_available, bool* queued) { 
+void DMA1_Stream6_IRQHandler() { 
     uint32_t isr = DMA1->HISR;          // Interrupt Status Register, ustawiony na 1 jeżeli przesłanie zakończyło się sukcesem
     if (isr & DMA_HISR_TCIF6) {
-        pop_front_x_bytes(c, get_first_message_length(c));
+        pop_front_x_bytes(&c, get_first_message_length(&c));
 
         DMA1->HIFCR = DMA_HIFCR_CTCIF6;         //Interrput Fluck Clear Register -> zeruje HISR.
         
-        if(!is_empty(c)) {
-            send_message(c);
+        if(!is_empty(&c)) {
+            send_message(&c);
         }
     }
 }
 
+void check_if_available() {
+    // ten warunek sprawdać gdy przycisk zgłasza przerwania i jeżeli DMA nie jest zajęte to od razu
+    // dajemy do DMA a w.p.p kolejkujemy.
+    if((DMA1_Stream6->CR & DMA_SxCR_EN) == 0 && (DMA1->HISR & DMA_HISR_TCIF6) == 0) {
+        send_message(&c);
+    }
+}
+
+
+void EXTI0_IRQHandler(void) {
+    EXTI->PR = EXTI_PR_PR0;
+    mode_pressed(&c);
+    check_if_available();
+}
+
+void EXTI3_IRQHandler(void) {
+    EXTI->PR = EXTI_PR_PR3;
+    left_pressed(&c);
+    check_if_available();
+}
+
+void EXTI4_IRQHandler(void) {
+    EXTI->PR = EXTI_PR_PR4;
+    right_pressed(&c);
+    check_if_available();
+}
+
+void EXTI9_5_IRQHandler(void) {
+    if(EXTI->PR & EXTI_PR_PR5) {
+        EXTI->PR = EXTI_PR_PR5;
+        up_pressed(&c);
+    }
+    else {
+        EXTI->PR = EXTI_PR_PR6;
+        down_pressed(&c);
+    }
+
+    check_if_available();
+}
+
+void EXTI15_10_IRQHandler(void) {
+    if(EXTI->PR & EXTI_PR_PR13) {
+        EXTI->PR = EXTI_PR_PR13;
+        user_pressed(&c);
+    }
+    else {
+        EXTI->PR = EXTI_PR_PR10;
+        action_pressed(&c);
+    }
+
+    check_if_available();
+}
 
 int main() {
-    
+
+    init(&c);
+
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN |
     RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_DMA1EN;
 
     RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+
+    RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+    
 
     GPIOafConfigure(GPIOA,
         2,
@@ -297,6 +280,17 @@ int main() {
         GPIO_Fast_Speed,
         GPIO_PuPd_UP,
         GPIO_AF_USART2); 
+    
+    // Trzeba skonfigurować przerwania dla odpowiedniego układu i linii na które jest guzik.
+    // Co jeżeli zrobię najpierw falling a potem Rising?
+    GPIOinConfigure(USER_BTN_GPIO, USER_BTN_PIN, GPIO_PuPd_UP, EXTI_Mode_Interrupt, EXTI_Trigger_Rising_Falling);
+    GPIOinConfigure(LEFT_BTN_GPIO, LEFT_BTN_PIN, GPIO_PuPd_UP, EXTI_Mode_Interrupt, EXTI_Trigger_Rising_Falling);
+    GPIOinConfigure(RIGHT_BTN_GPIO, RIGHT_BTN_PIN, GPIO_PuPd_UP, EXTI_Mode_Interrupt, EXTI_Trigger_Rising_Falling);
+    GPIOinConfigure(DOWN_BTN_GPIO, DOWN_BTN_PIN, GPIO_PuPd_UP, EXTI_Mode_Interrupt, EXTI_Trigger_Rising_Falling);
+    GPIOinConfigure(UP_BTN_GPIO, UP_BTN_PIN, GPIO_PuPd_UP, EXTI_Mode_Interrupt, EXTI_Trigger_Rising_Falling);
+    GPIOinConfigure(AT_BTN_GPIO, AT_BTN_PIN, GPIO_PuPd_UP, EXTI_Mode_Interrupt, EXTI_Trigger_Rising_Falling);
+    GPIOinConfigure(ACTION_BTN_GPIO, ACTION_BTN_PIN, GPIO_PuPd_UP, EXTI_Mode_Interrupt, EXTI_Trigger_Rising_Falling);
+    
 
     USART2->CR1 = USART_Mode_Rx_Tx | USART_WordLength_8b | USART_Parity_No;
     USART2->CR2 = USART_StopBits_1;
@@ -319,37 +313,25 @@ int main() {
     DMA1_Stream5->PAR = (uint32_t)&USART2->DR;
 
     DMA1->HIFCR = DMA_HIFCR_CTCIF6 | DMA_HIFCR_CTCIF5;
+
+    // Zerujemy bity przerwań, które mogły się zapalić przy odpalaniu programu (ich stan nie jest znany).
+    EXTI->PR = EXTI_PR_PR0;
+    EXTI->PR = EXTI_PR_PR10;
+    EXTI->PR = EXTI_PR_PR13;
+    EXTI->PR = EXTI_PR_PR3;
+    EXTI->PR = EXTI_PR_PR4;
+    EXTI->PR = EXTI_PR_PR5;
+    EXTI->PR = EXTI_PR_PR6;
+
     NVIC_EnableIRQ(DMA1_Stream6_IRQn);
     NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+    NVIC_EnableIRQ(EXTI15_10_IRQn);
+    NVIC_EnableIRQ(EXTI0_IRQn);
+    NVIC_EnableIRQ(EXTI3_IRQn);
+    NVIC_EnableIRQ(EXTI4_IRQn);
+    NVIC_EnableIRQ(EXTI9_5_IRQn);
 
-
-    USART2->CR1 |= USART_Enable;        // włączenie UARTU na koniec
-
-
-
-
-    cyclic_buffer c;
-    bool buttons_pressed[20];
-    memset(buttons_pressed, false, sizeof(buttons_pressed));
-    bool transmission_available = true;
-    bool queued = false;
-
-    bool was_empty = false;
-
-    init(&c);
-    for(;;) {
-        check_buttons(&c, buttons_pressed);
-
-        if(!is_empty(&c) && was_empty) {
-            was_empty = false;
-            send_message(&c);
-        }
-
-        if(is_empty(&c)) {
-            was_empty = true;
-        }
-    }
-        
+    USART2->CR1 |= USART_Enable;        // włączenie UARTU na koniec.
 
     return 0;
 }
