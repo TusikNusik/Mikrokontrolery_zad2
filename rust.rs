@@ -19,7 +19,7 @@ fn builder_each(attr: &syn::Attribute) -> syn::Result<Option<syn::Ident>> {
         for nested in &list.nested {
             if let syn::NestedMeta::Meta(syn::Meta::NameValue(nv)) = nested {
                 if nv.path.is_ident("each") {
-                   if let syn::Lit::Str(lit) = &nv.lit {
+                    if let syn::Lit::Str(lit) = &nv.lit {
                         return Ok(Some(syn::Ident::new(&lit.value(), lit.span())));
                     }
                 } else {
@@ -40,9 +40,7 @@ fn is_option(ty: &syn::Type) -> Option<&syn::Type> {
             let segment = type_path.path.segments.first()?;
             if segment.ident == "Option" {
                 if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                    if let Some(syn::GenericArgument::Type(inner_ty)) =
-                        args.args.first()
-                    {
+                    if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
                         return Some(inner_ty);
                     }
                 }
@@ -66,8 +64,7 @@ fn vec_inner_type(ty: &syn::Type) -> Option<&syn::Type> {
     None
 }
 
-
-fn implement_builder_macro(ast: &syn::DeriveInput)  -> TokenStream {
+fn implement_builder_macro(ast: &syn::DeriveInput) -> TokenStream {
     let fields = match &ast.data {
         syn::Data::Struct(data) => &data.fields,
         _ => panic!(),
@@ -86,20 +83,17 @@ fn implement_builder_macro(ast: &syn::DeriveInput)  -> TokenStream {
             field_type
         };
 
-        let each_method = match field.attrs.iter().find_map(|a| {
-            match builder_each(a) {
-                Ok(val) => val.map(Ok),
-                Err(e) => Some(Err(e)), 
-            }
+        let each_method = match field.attrs.iter().find_map(|a| match builder_each(a) {
+            Ok(val) => val.map(Ok),
+            Err(e) => Some(Err(e)),
         }) {
             Some(Ok(val)) => Some(val),
-            Some(Err(e)) => return e.to_compile_error().into(), 
+            Some(Err(e)) => return e.to_compile_error().into(),
             None => None,
         };
 
         if let Some(each_name) = &each_method {
-            let inner_type = vec_inner_type(field_type)
-                .expect("builder used on non-Vec field");
+            let inner_type = vec_inner_type(field_type).expect("builder used on non-Vec field");
 
             setters.push(quote! {
                 pub fn #each_name(&mut self, value: #inner_type) -> &mut Self {
@@ -109,8 +103,7 @@ fn implement_builder_macro(ast: &syn::DeriveInput)  -> TokenStream {
                     self
                 }
             });
-        } 
-        else {
+        } else {
             setters.push(quote! {
                 pub fn #field_name(&mut self, value: #inner_type) -> &mut Self {
                     self.#field_name = ::std::option::Option::Some(value);
@@ -142,7 +135,7 @@ fn implement_builder_macro(ast: &syn::DeriveInput)  -> TokenStream {
             args: ::std::option::Option<Vec<String>>,
             env: ::std::option::Option<Vec<String>>,
             current_dir: ::std::option::Option<String>,
-        }   
+        }
 
         impl Command {
             pub fn builder() -> CommandBuilder {
